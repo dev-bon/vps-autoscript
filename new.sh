@@ -3,19 +3,15 @@
 #fonts color
 Green="\033[32m"
 Red="\033[31m"
-# Yellow="\033[33m"
-GreenBG="\033[42;37m"
-RedBG="\033[41;37m"
 Font="\033[0m"
 
 #notification information
-# Info="${Green}[INFORMATION]${Font}"
 OK="${Green}[OK]${Font}"
 Error="${Red}[ERROR]${Font}"
 
 # Variables (Can be changed depends on your preferred values)
 # Script name
-MyScriptName='OctopusVPN'
+MyScriptName='DevscipleVPN'
 
 # OpenSSH Ports
 SSH_Port1='22'
@@ -23,31 +19,31 @@ SSH_Port2='225'
 
 # Websocket Ports
 WS_Port1='80'
-WS_Port2='8080'
+WS_Port2='443'
 
 # Your SSH Banner
 SSH_Banner='https://raw.githubusercontent.com/itsgelogomayee/dpndncy/master/banner'
 
 # Dropbear Ports
-Dropbear_Port1='900'
-Dropbear_Port2='990'
+Dropbear_Port1='550'
+Dropbear_Port2='555'
 
 # Stunnel Ports
-Stunnel_Port1='442' # through Dropbear
-Stunnel_Port2='441' # through OpenSSH
-Stunnel_Port3='440' # through OpenVPN
+Stunnel_Port1='443' # through Dropbear
+Stunnel_Port2='444' # through OpenSSH
+Stunnel_Port3='587' # through OpenVPN
 
 # OpenVPN Ports
 OpenVPN_Port1='110'
 OpenVPN_Port2='1194' # take note when you change this port, openvpn sun noload config will not work
 
 # Privoxy Ports (must be 1024 or higher)
-Privoxy_Port1='8118'
-Privoxy_Port2='8181'
+# Privoxy_Port1='8118'
+# Privoxy_Port2='8181'
 
 # Squid Ports (must be 1024 or higher)
 Proxy_Port1='8000'
-Proxy_Port2='8888'
+Proxy_Port2='8080'
 
 # OpenVPN Config Download Port
 OvpnDownload_Port='10' # Before changing this value, please read this document. It contains all unsafe ports for Google Chrome Browser, please read from line #23 to line #89: https://chromium.googlesource.com/chromium/src.git/+/refs/heads/master/net/base/port_util.cc
@@ -78,12 +74,12 @@ IPADDR="$(curl -4skL http://ipinfo.io/ip)"
 ## Setting variable
 GLOBAL_API_KEY="27a0f174be59ff38b69d8e1c7d65bd328349e"
 CLOUDFLARE_EMAIL="dibon.jhs@gmail.com"
-DOMAIN_NAME_TLD="vps.social"
-DOMAIN_ZONE_ID="1ae66de88770266ff9d2e1c946eda031"
+DOMAIN_NAME_TLD="devsiple.com"
+DOMAIN_ZONE_ID="4a4836fe931835235ce33eaa53662c97"
 
 ## Creating file dump for DNS Records
 TMP_FILE='/tmp/abonv.txt'
-curl -sX GET "https://api.cloudflare.com/client/v4/zones/$DOMAIN_ZONE_ID/dns_records?type=A&count=1000&per_page=1000" -H "X-Auth-Key: $GLOBAL_API_KEY" -H "X-Auth-Email: $CLOUDFLARE_EMAIL" -H "Content-Type: application/json" | python -m json.tool >"$TMP_FILE"
+curl -sX GET "https://api.cloudflare.com/client/v4/zones/$DOMAIN_ZONE_ID/dns_records?type=A&count=1000&per_page=1000" -H "X-Auth-Key: $GLOBAL_API_KEY" -H "X-Auth-Email: $CLOUDFLARE_EMAIL" -H "Content-Type: application/json" | python -m json.tool >"$TMP_FILE" 2>/dev/null || python3 -m json.tool >"$TMP_FILE"
 
 ## Getting Existed DNS Record by Locating its IP Address "content" value
 CHECK_IP_RECORD="$(cat <"$TMP_FILE" | jq '.result[]' | jq 'del(.meta)' | jq 'del(.created_on,.locked,.modified_on,.proxiable,.proxied,.ttl,.type,.zone_id,.zone_name)' | jq '. | select(.content=='\"$IPADDR\"')' | jq -r '.content' | awk '!a[$0]++')"
@@ -107,14 +103,14 @@ else
 
      PAYLOAD=$(tr </dev/urandom -dc 0-9 | head -c2)
      echo -e "Your IP Address:\033[0;35m $IPADDR\033[0m"
-     COUNTRY_CODE=$(curl -sLX GET "http://api.ipstack.com/"$IPADDR"?access_key=4b3dcc7de4270a6453081070f8c98ab8&fields=country_code" \
+     COUNTRY_CODE=$(curl -sLX GET "http://api.ipstack.com/"$IPADDR"?access_key=b7c8d95ad98d4e485cdefa38f0a613cd&fields=country_code" \
           -H "Content-Type: application/json" | jq -r .country_code)
      servername=$(echo "$COUNTRY_CODE" | tr [:upper:] [:lower:])
 
      ### Creating a DNS Record
      function CreateRecord() {
           TMP_FILE2='/tmp/abonv2.txt'
-          curl -sX POST "https://api.cloudflare.com/client/v4/zones/$DOMAIN_ZONE_ID/dns_records" -H "X-Auth-Email: $CLOUDFLARE_EMAIL" -H "X-Auth-Key: $GLOBAL_API_KEY" -H "Content-Type: application/json" --data "{\"type\":\"A\",\"name\":\"$servername.$PAYLOAD\",\"content\":\"$IPADDR\",\"ttl\":86400,\"proxied\":false}" | python -m json.tool >"$TMP_FILE2"
+          curl -sX POST "https://api.cloudflare.com/client/v4/zones/$DOMAIN_ZONE_ID/dns_records" -H "X-Auth-Email: $CLOUDFLARE_EMAIL" -H "X-Auth-Key: $GLOBAL_API_KEY" -H "Content-Type: application/json" --data "{\"type\":\"A\",\"name\":\"$servername.$PAYLOAD\",\"content\":\"$IPADDR\",\"ttl\":86400,\"proxied\":false}" | python -m json.tool >"$TMP_FILE2" 2>/dev/null || python3 -m json.tool >"$TMP_FILE2"
 
           cat <"$TMP_FILE2" | jq '.result' | jq 'del(.meta)' | jq 'del(.created_on,.locked,.modified_on,.proxiable,.proxied,.ttl,.type,.zone_id,.zone_name)' >/tmp/abonv22.txt
           rm -f "$TMP_FILE2"
@@ -137,11 +133,13 @@ echo -e "$MYDNS" >/tmp/abonv_mydns
 echo -e "$MYDNS_ID" >/tmp/abonv_mydns_id
 
 function InstUpdates() {
-     # Installing some important machine essentials
-     apt-get install nano wget curl zip unzip tar gzip p7zip-full bc rc openssl cron net-tools dnsutils dos2unix screen bzip2 ccrypt libssl1.0.0 -y
+     export DEBIAN_FRONTEND=noninteractive
 
      # Installing some important machine essentials
-     apt-get install dropbear stunnel4 privoxy ca-certificates nginx ruby apt-transport-https lsb-release squid screenfetch -y
+     apt-get install nano wget curl zip unzip tar gzip p7zip-full bc rc openssl cron net-tools dnsutils dos2unix screen bzip2 net-tools ccrypt -y
+
+     # Installing some important machine essentials
+     apt-get install dropbear stunnel4 openvpn ca-certificates nginx ruby apt-transport-https lsb-release squid screenfetch -y
 
      # Installing all required packages to install Webmin
      apt-get install perl libnet-ssleay-perl openssl libauthen-pam-perl libpam-runtime libio-pty-perl apt-show-versions python dbus libxml-parser-perl -y
@@ -155,10 +153,10 @@ function InstUpdates() {
 
      # Installing OpenVPN by pulling its repository inside sources.list file
      #rm -rf /etc/apt/sources.list.d/openvpn*
-     echo "deb http://build.openvpn.net/debian/openvpn/stable $(lsb_release -sc) main" >/etc/apt/sources.list.d/openvpn.list && apt-key del E158C569 && wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
-     wget -qO security-openvpn-net.asc "https://keys.openpgp.org/vks/v1/by-fingerprint/F554A3687412CFFEBDEFE0A312F5F7B42F2B01E7" && gpg --import security-openvpn-net.asc
-     apt-get update -y
-     apt-get install openvpn -y
+     # echo "deb http://build.openvpn.net/debian/openvpn/stable $(lsb_release -sc) main" >/etc/apt/sources.list.d/openvpn.list && apt-key del E158C569 && wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+     # wget -qO security-openvpn-net.asc "https://keys.openpgp.org/vks/v1/by-fingerprint/F554A3687412CFFEBDEFE0A312F5F7B42F2B01E7" && gpg --import security-openvpn-net.asc
+     # apt-get update -y
+     # apt-get install openvpn -y
 }
 
 function InstSSH() {
@@ -269,18 +267,15 @@ client = no
 socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
 TIMEOUTclose = 0
-[stunnel]
-connect = 127.0.0.1:WS_Port1
-accept = WS_Port2
+
 [dropbear]
 accept = Stunnel_Port1
 connect = 127.0.0.1:dropbear_port_c
-[websocket]
-accept = 443
-connect = 127.0.0.1:80
+
 [openssh]
 accept = Stunnel_Port2
 connect = 127.0.0.1:openssh_port_c
+
 [openvpn]
 accept = Stunnel_Port3
 connect = 127.0.0.1:MyOvpnPort1
@@ -288,8 +283,6 @@ cert = /etc/stunnel/stunnel.pem
 MyStunnelC
 
      # setting stunnel ports
-     sed -i "s|WS_Port1|$WS_Port1|g" /etc/stunnel/stunnel.conf
-     sed -i "s|WS_Port2|$WS_Port2|g" /etc/stunnel/stunnel.conf
      sed -i "s|MyOvpnPort1|$OpenVPN_Port1|g" /etc/stunnel/stunnel.conf
      sed -i "s|Stunnel_Port1|$Stunnel_Port1|g" /etc/stunnel/stunnel.conf
      sed -i "s|dropbear_port_c|$(netstat -tlnp | grep -i dropbear | awk '{print $4}' | cut -d: -f2 | xargs | awk '{print $2}' | head -n1)|g" /etc/stunnel/stunnel.conf
@@ -558,7 +551,7 @@ EOF10
      firewall-cmd --quiet --permanent --add-service=openvpn
      firewall-cmd --quiet --permanent --add-service=http
      firewall-cmd --quiet --permanent --add-service=https
-     firewall-cmd --quiet --permanent --add-service=privoxy
+     #firewall-cmd --quiet --permanent --add-service=privoxy
      firewall-cmd --quiet --permanent --add-service=squid
      firewall-cmd --quiet --reload
 
@@ -579,47 +572,47 @@ EOF10
 }
 
 function InsProxy() {
-     # Removing Duplicate privoxy config
-     rm -rf /etc/privoxy/config*
+     #      # Removing Duplicate privoxy config
+     #      #rm -rf /etc/privoxy/config*
 
-     # Creating Privoxy server config using cat eof tricks
-     cat <<'myPrivoxy' >/etc/privoxy/config
-# My Privoxy Server Config
-user-manual /usr/share/doc/privoxy/user-manual
-confdir /etc/privoxy
-logdir /var/log/privoxy
-filterfile default.filter
-logfile logfile
-listen-address 0.0.0.0:Privoxy_Port1
-listen-address 0.0.0.0:Privoxy_Port2
-toggle 1
-enable-remote-toggle 0
-enable-remote-http-toggle 0
-enable-edit-actions 0
-enforce-blocks 0
-buffer-limit 4096
-enable-proxy-authentication-forwarding 1
-forwarded-connect-retries 1
-accept-intercepted-requests 1
-allow-cgi-request-crunching 1
-split-large-forms 0
-keep-alive-timeout 5
-tolerate-pipelining 1
-socket-timeout 300
-permit-access 0.0.0.0/0 IP-ADDRESS
-myPrivoxy
+     #      # Creating Privoxy server config using cat eof tricks
+     #      #cat <<'myPrivoxy' >/etc/privoxy/config
+     # # My Privoxy Server Config
+     # user-manual /usr/share/doc/privoxy/user-manual
+     # confdir /etc/privoxy
+     # logdir /var/log/privoxy
+     # filterfile default.filter
+     # logfile logfile
+     # listen-address 0.0.0.0:Privoxy_Port1
+     # listen-address 0.0.0.0:Privoxy_Port2
+     # toggle 1
+     # enable-remote-toggle 0
+     # enable-remote-http-toggle 0
+     # enable-edit-actions 0
+     # enforce-blocks 0
+     # buffer-limit 4096
+     # enable-proxy-authentication-forwarding 1
+     # forwarded-connect-retries 1
+     # accept-intercepted-requests 1
+     # allow-cgi-request-crunching 1
+     # split-large-forms 0
+     # keep-alive-timeout 5
+     # tolerate-pipelining 1
+     # socket-timeout 300
+     # permit-access 0.0.0.0/0 IP-ADDRESS
+     # myPrivoxy
 
-     # Setting machine's IP Address inside of our privoxy config(security that only allows this machine to use this proxy server)
-     sed -i "s|IP-ADDRESS|$IPADDR|g" /etc/privoxy/config
+     #      # Setting machine's IP Address inside of our privoxy config(security that only allows this machine to use this proxy server)
+     #      sed -i "s|IP-ADDRESS|$IPADDR|g" /etc/privoxy/config
 
-     # Setting privoxy ports
-     sed -i "s|Privoxy_Port1|$Privoxy_Port1|g" /etc/privoxy/config
-     sed -i "s|Privoxy_Port2|$Privoxy_Port2|g" /etc/privoxy/config
+     #      # Setting privoxy ports
+     #      sed -i "s|Privoxy_Port1|$Privoxy_Port1|g" /etc/privoxy/config
+     #      sed -i "s|Privoxy_Port2|$Privoxy_Port2|g" /etc/privoxy/config
 
      # I'm setting Some Squid workarounds to prevent Privoxy's overflowing file descriptors that causing 50X error when clients trying to connect to your proxy server(thanks for this trick @homer_simpsons)
-     apt remove --purge squid -y
-     rm -rf /etc/squid/sq*
-     apt install squid -y
+     # apt remove --purge squid -y
+     # rm -rf /etc/squid/sq*
+     # apt install squid -y
 
      # Squid Ports (must be 1024 or higher)
      cat <<mySquid >/etc/squid/squid.conf
@@ -718,13 +711,8 @@ keysize 0
 comp-lzo
 setenv CLIENT_CERT 0
 reneg-sec 0
-verb 1
+verb 2
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
-http-proxy-option VERSION 1.1
-http-proxy-option CUSTOM-HEADER "Host: google.com"
-http-proxy-option CUSTOM-HEADER "X-Online-Host: google.com"
-http-proxy-option CUSTOM-HEADER "X-Forward-Host: google.com"
-http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
 <ca>
 $(cat /etc/openvpn/ca.crt)
 </ca>
@@ -816,7 +804,7 @@ function ConfMenu() {
      rm -f menu.zip
      chmod +x ./*
      dos2unix ./* &>/dev/null
-     sed -i 's|/etc/squid/squid.conf|/etc/privoxy/config|g' ./*
+     #sed -i 's|/etc/squid/squid.conf|/etc/privoxy/config|g' ./*
      sed -i 's|http_port|listen-address|g' ./*
      cd ~
      echo 'clear' >/etc/profile.d/octopusvpn.sh
@@ -844,9 +832,9 @@ else:
 PASS = ''
 # CONST
 BUFLEN = 4096 * 4
-TIMEOUT = 3600
-DEFAULT_HOST = '127.0.0.1:22'
-RESPONSE = 'HTTP/1.1 200 <font color="green">Socket Connection Established</font>\r\n\r\nContent-Length: 104857600000\r\n\r\n'
+TIMEOUT = 86400
+DEFAULT_HOST = '127.0.0.1:550'
+RESPONSE = 'HTTP/1.1 101 <font color="yellow">XAMJYSSVPN|CoronaSSH</font>\r\n\r\nContent-Length: 104857600000\r\n\r\n'
 class Server(threading.Thread):
     def __init__(self, host, port):
         threading.Thread.__init__(self)
@@ -978,7 +966,7 @@ class ConnectionHandler(threading.Thread):
             if self.method=='CONNECT':
                 port = 443
             else:
-                port = 22
+                port = sys.argv[1]
         (soc_family, soc_type, proto, _, address) = socket.getaddrinfo(host, port)[0]
         self.target = socket.socket(soc_family, soc_type, proto)
         self.targetClosed = False
@@ -1168,7 +1156,7 @@ InstSSH
 echo -e "Configuring stunnel..."
 InsStunnel
 
-# Configure Privoxy and Squid
+# Configure Squid
 echo -e "Configuring proxy..."
 InsProxy
 
@@ -1211,7 +1199,7 @@ echo -e "${Green} VPN Configuration ${Font}"
 echo -e "${Green} OpenSSH:${Font} $SSH_Port1, $SSH_Port2"
 echo -e "${Green} Stunnel:${Font} $Stunnel_Port1, $Stunnel_Port2"
 echo -e "${Green} DropbearSSH:${Font} $Dropbear_Port1, $Dropbear_Port2"
-echo -e "${Green} Privoxy:${Font} $Privoxy_Port1, $Privoxy_Port2"
+#echo -e "${Green} Privoxy:${Font} $Privoxy_Port1, $Privoxy_Port2"
 echo -e "${Green} Squid:${Font} $Proxy_Port1, $Proxy_Port2"
 echo -e "${Green} OpenVPN:${Font} TCP $OpenVPN_Port1, UDP $OpenVPN_Port2, SSL $Stunnel_Port3"
 echo -e "${Green} Nginx:${Font} $OvpnDownload_Port"
